@@ -30,7 +30,7 @@ git fetch upstream
 for commit in ${commits}; do
     target_branch=$(git notes show ${commit}|sed -n 's,^Public-Branch: ,,p')
     if [ -z "${target_branch}" ]; then
-        target_branch=$(git log -n1 --pretty=format:%f ${commit})
+        target_branch=$(git log -n1 --pretty=format:%f ${commit})_${RANDOM}
         (
             cd $current_dir
             git notes add -m "Public-Branch: ${target_branch}" ${commit}
@@ -60,10 +60,12 @@ for commit in ${commits}; do
     git log -1 --pretty='format:%s
 
 %b' > /tmp/_my_pr_body.txt
-    pr_url=$(hub pull-request -F /tmp/_my_pr_body.txt -b main --head ${github_user}:${target_branch})
-    (
-        cd $current_dir
-        git notes append -m "PR-Url: ${pr_url}" ${commit}
-    )
+    pr_url=$(hub pull-request -F /tmp/_my_pr_body.txt -b ${main_branch} --head ${github_user}:${target_branch}||true)
+    if [ ! -z "${pr_url}" ]; then
+        (
+            cd $current_dir
+            git notes append -m "PR-Url: ${pr_url}" ${commit}
+        )
+    fi
 done
 rm -rf ${temp_dir}
